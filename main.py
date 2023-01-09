@@ -46,7 +46,7 @@ loader = torch.utils.data.DataLoader(dataset, batch_size=16)
 st.title('Carga de archivos de audio')
 
 #Cargar audio
-uploaded_file = st.file_uploader("Carga un archivo de audio", type=["mp3"])
+uploaded_file = st.file_uploader("Carga un archivo de audio", type='audio/mpeg')
 if uploaded_file is not None:
     st.warning("Waiting for file to be uploaded and processed...")
     st.write('File name: `%s`' % uploaded_file)
