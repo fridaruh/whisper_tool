@@ -49,8 +49,8 @@ st.title('Carga de archivos de audio')
 uploaded_file = st.file_uploader("Carga un archivo de audio", type='mp3')
 if uploaded_file is not None:
     st.warning("Waiting for file to be uploaded and processed...")
-    st.write('File name: `%s`' % uploaded_file.path)
-    audio_whisper = whisper.load_audio(uploaded_file.path)
+    st.write('File name: `%s`' % uploaded_file)
+    audio_whisper = whisper.load_audio(uploaded_file)
     model = whisper.load_model("base")
     result = model.transcribe(audio_whisper)
     transcripcion = result["text"]
