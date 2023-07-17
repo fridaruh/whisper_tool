@@ -3,9 +3,6 @@ import openai
 import docx
 from docx import Document
 
-# Set your OpenAI API key
-openai.api_key = 'your-openai-api-key'
-
 #Connect to openAI
 def openai_connect():
     credential_openai= st.secrets["openai_creds"]
