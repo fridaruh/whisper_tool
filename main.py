@@ -1,76 +1,33 @@
-import whisper 
-import os
-import numpy as np
-try:
-    import tensorflow  # required in Colab to avoid protobuf compatibility issues
-except ImportError:
-    pass
-
-import torch
-import pandas as pd
-import whisper
-import torchaudio
 import streamlit as st
+import openai
+import docx
+from docx import Document
 
-from tqdm.notebook import tqdm
+# Set your OpenAI API key
+openai.api_key = 'your-openai-api-key'
 
-DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+#Connect to openAI
+def openai_connect():
+    credential_openai= st.secrets["openai_creds"]
+    openai.api_key = credential_openai.openai_api_key
+    return openai
+    
 
-class LibriSpeech(torch.utils.data.Dataset):
-    """
-    A simple class to wrap LibriSpeech and trim/pad the audio to 30 seconds.
-    It will drop the last few seconds of a very small portion of the utterances.
-    """
-    def __init__(self, split="test-clean", device=DEVICE):
-        self.dataset = torchaudio.datasets.LIBRISPEECH(
-            root=os.path.expanduser("~/.cache"),
-            url=split,
-            download=True,
-        )
-        self.device = device
+def transcribe_audio(audio_file):
+    transcript = openai_connect().Audio.transcribe("whisper-1", audio_file)
+    return transcript.text
 
-    def __len__(self):
-        return len(self.dataset)
+st.title('Audio Transcription with OpenAI Whisper')
 
-    def __getitem__(self, item):
-        audio, sample_rate, text, _, _, _ = self.dataset[item]
-        assert sample_rate == 16000
-        audio = whisper.pad_or_trim(audio.flatten()).to(self.device)
-        mel = whisper.log_mel_spectrogram(audio)
-        
-        return (mel, text)
+uploaded_file = st.file_uploader("Choose an audio file...", type=['mp3', 'mp4', 'mpeg', 'mpga', 'm4a', 'wav', 'webm'])
 
-dataset = LibriSpeech("test-clean")
-loader = torch.utils.data.DataLoader(dataset, batch_size=16)
-
-st.title('Carga de archivos de audio')
-
-#Cargar audio
-uploaded_file = st.file_uploader("Carga un archivo de audio", type='mp3')
 if uploaded_file is not None:
-    st.warning("Waiting for file to be uploaded and processed...")
-    st.write('File name: `%s`' % uploaded_file)
-    audio_whisper = whisper.load_audio(uploaded_file)
-    model = whisper.load_model("base")
-    result = model.transcribe(audio_whisper)
-    transcripcion = result["text"]
-
-    #obtener la ruta del archivo cargado
-    ruta = uploaded_file.name
-    f = open(ruta,"w+")
-    text_file = open(ruta,"w")
-
-    #write string to file
-    text_file.write(transcripcion)
-
-    #close file
-    text_file.close()
-
-    #Descargar el archivo
-    st.download_button(
-        label="Descargar transcripción",
-        data=text_file,
-        file_name= ruta+'.txt',
-        mime='text/plain')
-else: 
-    st.warning("No file uploaded")
+    if st.button('Transcribe'):
+        with st.spinner('Transcribing...'):
+            transcript_text = transcribe_audio(uploaded_file)
+            st.text_area('Transcript:', value=transcript_text, height=200, max_chars=None)
+            
+            doc = Document()
+            doc.add_paragraph(transcript_text)
+            doc.save("transcript.docx")
+            st.success('Transcription complete. The transcript has been saved as a .docx file.')
